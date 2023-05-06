@@ -129,9 +129,10 @@ exports.sendSMSTwilio = async (toNumber, message) => {
 
     try {
         const response = await client.messages.create({ body: message, from: fromNumber, to: toNumber });
+        if (this.isEmpty(response) || response === null) throw "le token auth sms expiré."
         return response
     } catch (error) {
-        console.error(`Error sending SMS: ${error.message}`);
+        console.error(`Error sending SMS: ${error}`);
     }
 }
 

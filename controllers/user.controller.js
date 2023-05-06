@@ -144,7 +144,7 @@ exports.forgot_password = async (req, res) => {
             // const sms = await sendSMS("0022379364385", "0022379364385", message)
             const sms = await sendSMSTwilio("+223" + phone, message)
 
-            if (isEmpty(sms) || sms !== null) throw "Erreur d'envoie du code de recuperation"
+            if (isEmpty(sms) || sms === null) throw "Erreur d'envoie du code de recuperation"
 
             res.status(200).json({ response: { token, phone }, message: "Code de recuperation envoyé" })
         }
