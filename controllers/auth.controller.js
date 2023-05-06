@@ -112,9 +112,6 @@ exports.signup = async (req, res) => {
     try {
         const { activation_code, code, password_confirm, facebook } = req.body
 
-        console.log("activation_code ", activation_code)
-        console.log("code ", code)
-
         const phone = removePhoneIndicatif(req.body.phone)
 
         const isExist = await UserModel.findOne({ phone })
@@ -126,10 +123,6 @@ exports.signup = async (req, res) => {
         if (req.body.password.length < 6) throw "Mot de passe trop court. Min: 6 caractères"
         if (req.body.password !== password_confirm) throw "Les mots de passe ne se correspondent pas."
         if (activation_code !== code) throw "Code d'activation incorrect."
-
-
-
-
 
         const salt = await bcrypt.genSalt(10)
         const hash = await bcrypt.hash(req.body.password, salt)
