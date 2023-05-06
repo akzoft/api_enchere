@@ -1,10 +1,11 @@
 const JsonWebToken = require("jsonwebtoken")
 const UserModel = require("../models/user.model")
-const { isEmpty, genKey, sendSMS, sendSMSTwilio } = require("../utils/functions")
+const { isEmpty, genKey, sendSMS, sendSMSTwilio, genRandomNums } = require("../utils/functions")
 const bcrypt = require('bcrypt')
 const { register_validation, register_error_validation } = require("../utils/validations")
 const { isValidObjectId } = require("mongoose")
-const { constants } = require("../utils/constants")
+const { constants, regex } = require("../utils/constants")
+const { removePhoneIndicatif } = require("../utils/functions")
 
 //----------- @return boolean depending on whether the user token is valid or not ------------------
 //check if got token is valid then send true else send false
@@ -106,11 +107,64 @@ exports.licenseActivation = async (req, res) => {
     }
 }
 
+
+exports.signup = async (req, res) => {
+    try {
+        const { activation_code, code, password_confirm, facebook } = req.body
+
+        console.log("activation_code ", activation_code)
+        console.log("code ", code)
+
+        const phone = removePhoneIndicatif(req.body.phone)
+
+        const isExist = await UserModel.findOne({ phone })
+
+        if (!isEmpty(isExist)) throw "Ce compte existe deja."
+        if (phone === "") throw "Un numéro de telephone est requis."
+        if (phone && !regex.phone.test(phone)) throw " Format du numéro de telephone incorrect."
+        if (isEmpty(req.body.password) || req.body.password === "") throw "Un mot de passe est requis."
+        if (req.body.password.length < 6) throw "Mot de passe trop court. Min: 6 caractères"
+        if (req.body.password !== password_confirm) throw "Les mots de passe ne se correspondent pas."
+        if (activation_code !== code) throw "Code d'activation incorrect."
+
+
+
+
+
+        const salt = await bcrypt.genSalt(10)
+        const hash = await bcrypt.hash(req.body.password, salt)
+        const toStore = new UserModel({ phone, password: hash })
+
+        const users = await UserModel.find({ vip: true });
+
+        if (users.length !== 0) {
+            let getAllNumbersPhoneInvited = users.flatMap(user => user.invitations)
+                .filter((phone, index, phones) => phones.indexOf(phone) === index);
+
+            if (getAllNumbersPhoneInvited.includes(phone)) toStore.vip = true
+        }
+
+        if (!isEmpty(facebook) || facebook !== null) toStore.facebook = facebook
+
+        const user = await toStore.save()
+
+        console.log(user)
+        const token = JsonWebToken.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "3h" })
+
+        let { password, ...rest } = user._doc
+
+        res.status(200).json({ token, response: rest, message: "Creation de compte reussie." })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({ message: error });
+    }
+
+}
+
 exports.register = (req, res) => {
-    const { phone, password, password_confirm } = req.body
+    const { phone, password, password_confirm, facebook } = req.body
 
     const { error, initialError } = register_validation(phone, password, password_confirm)
-
 
     if (error !== initialError) {
         return res.status(400).json({ message: error })
@@ -162,34 +216,37 @@ exports.register = (req, res) => {
                             .catch(error => res.status(500).json({ message: error }))
                     })
                 } else {
-                    const licenceKey = genKey()
-                    licenceKey.get((error, code) => {
-                        if (error) return res.status(500).json({ message: error.message })
 
-                        bcrypt.hash(password, 10)
-                            .then(hash => {
-                                const user = new UserModel({ phone, password: hash })
+                    const code = genRandomNums(5)
 
-                                user.save()
-                                    .then((user) => {
-                                        user.licenseKey = code
+                    // const licenceKey = genKey()
+                    // licenceKey.get((error, code) => {
+                    // if (error) return res.status(500).json({ message: error.message })
 
-                                        user.save()
-                                            .then((user) => {
+                    bcrypt.hash(password, 10)
+                        .then(hash => {
+                            const user = new UserModel({ phone, password: hash, facebook: facebook || null })
 
-                                                // sendSMS(constants.sms_sender_number, "00223" + user?.phone, code)
-                                                sendSMSTwilio("+223" + user.phone, code)
-                                                    .then(sms => {
-                                                        res.status(201).json({ response: user, message: "L'utilisateur a été crée avec succès", sms })
-                                                    })
-                                                    .catch((error) => res.status(500).json({ message: error.message }))
-                                            })
-                                            .catch((error) => res.status(500).json({ message: error.message }))
-                                    })
-                                    .catch((error) => res.status(500).json(register_error_validation(error)))
-                            })
-                            .catch(error => res.status(500).json({ message: error }))
-                    })
+                            user.save()
+                                .then((user) => {
+                                    user.licenseKey = code
+
+                                    user.save()
+                                        .then((user) => {
+
+                                            // sendSMS(constants.sms_sender_number, "00223" + user?.phone, code)
+                                            sendSMSTwilio("+223" + user.phone, code)
+                                                .then(sms => {
+                                                    res.status(201).json({ response: user, message: "L'utilisateur a été crée avec succès", sms })
+                                                })
+                                                .catch((error) => res.status(500).json({ message: error.message }))
+                                        })
+                                        .catch((error) => res.status(500).json({ message: error.message }))
+                                })
+                                .catch((error) => res.status(500).json(register_error_validation(error)))
+                        })
+                        .catch(error => res.status(500).json({ message: error }))
+                    // })
                 }
             })
             .catch((error) => res.status(500).json({ message: error.message }))

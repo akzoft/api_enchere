@@ -6,7 +6,7 @@ const bcrypt = require('bcrypt')
 const jwt = require("jsonwebtoken")
 const EnchereModel = require("../models/enchere.model")
 const TextFlow = require("textflow.js")
-const { constants } = require("../utils/constants")
+const { constants, regex } = require("../utils/constants")
 
 TextFlow.useKey(process.env.OTP_API)
 
@@ -122,10 +122,6 @@ exports.forgot_password = async (req, res) => {
     try {
         const { plateforme, phone } = req.body
 
-        // let rs = await TextFlow.sendVerificationSMS('+223' + phone)
-        // console.log(rs)
-
-
         if (phone === "" || isEmpty(phone)) throw "Un numéro de téléphone est requis!"
 
         const user = await UserModel.findOne({ phone })
@@ -146,9 +142,9 @@ exports.forgot_password = async (req, res) => {
 
             let message = `Votre code de recuperation est: ${token}`
             // const sms = await sendSMS("0022379364385", "0022379364385", message)
-            const sms = await sendSMSTwilio("+223" + phone, message)
+            // const sms = await sendSMSTwilio("+223" + phone, message)
 
-            if (isEmpty(sms)) throw "Erreur d'envoie du code de recuperation"
+            // if (isEmpty(sms)) throw "Erreur d'envoie du code de recuperation"
 
             res.status(200).json({ response: { token, phone }, message: "Code de recuperation envoyé" })
         }
@@ -234,3 +230,29 @@ exports.getAllFirebaseToken = async (req, res) => {
         res.status(500).send({ message: error })
     }
 }
+
+exports.checkingPhone = async (req, res) => {
+    try {
+        const { phone, password, password_confirm } = req.body
+
+        const isExist = await UserModel.findOne({ phone })
+
+        if (!isEmpty(isExist)) throw "Ce compte existe deja."
+        if (phone === "") throw "Un numéro de telephone est requis."
+        if (phone && !regex.phone.test(phone)) throw " Format du numéro de telephone incorrect."
+        if (isEmpty(password) || password === "") throw "Un mot de passe est requis."
+        if (password.length < 6) throw "Mot de passe trop court. Min: 6 caractères"
+        if (password !== password_confirm) throw "Les mots de passe ne se correspondent pas."
+
+        const code = genRandomNums(5)
+
+        const message = "Le code d'activation de votre compte est: " + code
+        // const sms = await sendSMSTwilio("+223" + phone, message)
+        // if (isEmpty(sms) || sms === null) throw "Erreur lors de l'envoi du code d'activation."
+        console.log(code)
+        res.status(200).json({ response: code, message: "Code d'activation envoyé." })
+    } catch (error) {
+        res.status(500).send({ message: error || error.message })
+    }
+}
+
