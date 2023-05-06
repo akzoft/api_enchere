@@ -252,6 +252,7 @@ exports.checkingPhone = async (req, res) => {
         console.log(code)
         res.status(200).json({ response: code, message: "Code d'activation envoyé." })
     } catch (error) {
+        console.log(error)
         res.status(500).send({ message: error || error.message })
     }
 }
