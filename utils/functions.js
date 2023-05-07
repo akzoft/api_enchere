@@ -122,17 +122,16 @@ exports.sendSMS = async (from, to, message) => {
 // Function to send SMS using Twilio
 exports.sendSMSTwilio = async (toNumber, message) => {
     const accountSid = 'AC517c6b441a2e73f9578da69db46d3204';
-    const authToken = 'aa0d2f94e2e076888ba27ee3dd04183f';
+    const authToken = '0cafbb46ec16500e3be994b79d54ada2';
     const fromNumber = '+13203011002';
 
     const client = twilio(accountSid, authToken);
 
     try {
         const response = await client.messages.create({ body: message, from: fromNumber, to: toNumber });
-        if (this.isEmpty(response) || response === null) throw "le token auth sms expiré."
         return response
     } catch (error) {
-        console.error(`Error sending SMS: ${error}`);
+        console.error(`Error sending SMS: ${error.message}`);
     }
 }
 
@@ -150,6 +149,7 @@ exports.sendNotification = async (title, body, imageUrl, to, data) => {
         return error
     }
 }
+
 
 
 exports.removePhoneIndicatif = (numero) => {

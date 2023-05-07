@@ -1,14 +1,12 @@
 const { isValidObjectId } = require("mongoose")
 const UserModel = require("../models/user.model")
 const { send_invitation_validation } = require("../utils/validations")
-const { isEmpty, genRandomNums, sendSMS, isEqual, sendSMSTwilio } = require("../utils/functions")
+const { isEmpty, genRandomNums, isEqual, sendSMSTwilio } = require("../utils/functions")
 const bcrypt = require('bcrypt')
 const jwt = require("jsonwebtoken")
 const EnchereModel = require("../models/enchere.model")
-const TextFlow = require("textflow.js")
 const { constants, regex } = require("../utils/constants")
 
-TextFlow.useKey(process.env.OTP_API)
 
 //--------- @return "user's data" and "success message" ----------------
 //update user's info and password if exist
@@ -20,8 +18,6 @@ exports.update_user = async (req, res) => {
         }
 
         const user = await UserModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true }).select("-password")
-
-        console.log(user)
 
         if (isEmpty(user)) throw "Mise à jour de cet utilisateur impossible"
         res.status(200).json({ response: user, message: "Informations de l'utilisateur mise à jour." })
@@ -118,6 +114,7 @@ exports.send_invitation = (req, res) => {
     }
 }
 
+//mot de passe oublier
 exports.forgot_password = async (req, res) => {
     try {
         const { plateforme, phone } = req.body
@@ -142,9 +139,9 @@ exports.forgot_password = async (req, res) => {
 
             let message = `Votre code de recuperation est: ${token}`
             // const sms = await sendSMS("0022379364385", "0022379364385", message)
-            const sms = await sendSMSTwilio("+223" + phone, message)
+            // const sms = await sendSMSTwilio("+223" + phone, message)
 
-            if (isEmpty(sms) || sms === null) throw "Erreur d'envoie du code de recuperation"
+            // if (isEmpty(sms) || sms === null) throw "Erreur d'envoie du code de recuperation"
 
             res.status(200).json({ response: { token, phone }, message: "Code de recuperation envoyé" })
         }
@@ -186,7 +183,7 @@ exports.confirm_forgot_recovery_code = async (req, res) => {
     }
 }
 
-//-----------@return 
+//reinitialiser mot de passe
 exports.reset_forgot_password = async (req, res) => {
     try {
         let { password, confirm, phone } = req.body
@@ -247,8 +244,8 @@ exports.checkingPhone = async (req, res) => {
         const code = genRandomNums(5)
 
         const message = "Le code d'activation de votre compte est: " + code
-        const sms = await sendSMSTwilio("+223" + phone, message)
-        if (isEmpty(sms) || sms === null) throw "Erreur lors de l'envoi du code d'activation."
+        // const sms = await sendSMSTwilio("+223" + phone, message)
+        // if (isEmpty(sms) || sms === null) throw "Erreur lors de l'envoi du code d'activation."
         console.log(code)
         res.status(200).json({ response: code, message: "Code d'activation envoyé." })
     } catch (error) {
