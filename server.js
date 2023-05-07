@@ -8,6 +8,7 @@ const { convertOctetsToMo } = require("./utils/functions")
 const admin = require("firebase-admin")
 const serviceAccount = require("./serviceAccountKey.json")
 const EnchereModel = require("./models/enchere.model")
+const { SHA1 } = require("crypto-js")
 require("./config/db")
 
 const app = express()
@@ -44,6 +45,7 @@ app.use((err, req, res, next) => {
 app.post('/api/paiement-callback', async (req, res) => {
     try {
         const order_id = req.body.order_id;
+        const amount = req.body.amount;
         const authenticity = req.body.authenticity;
         const success = req.body.success;
         const failure = req.body.failure;
@@ -53,10 +55,10 @@ app.post('/api/paiement-callback', async (req, res) => {
         const sandbox = process.env.ENV;
 
         // Vérification de l'authenticité
-        const enchere = await EnchereModel.findOne({ order_id: order_id });
-        const amount_gived = enchere.montant_fourni * 100;
+        const enchere = await EnchereModel.findOne({ _id: order_id });
+        const amount_gived = amount * 100;
         const our_authenticity = `${order_id};${amount_gived};XOF;${api_secret}`;
-        const our_authenticity_hash = sha1(our_authenticity).toUpperCase();
+        const our_authenticity_hash = SHA1(our_authenticity).toUpperCase();
 
         if (our_authenticity_hash !== authenticity) {
             return res.status(400).json({
