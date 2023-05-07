@@ -43,7 +43,7 @@ app.use((err, req, res, next) => {
 app.post('/api/paiement-callback', (req, res) => {
     // Code de traitement des notifications de paiement
     console.log('Notification de paiement reçue :', req.body);
-    res.send('Notification de paiement reçue');
+    res.send({ success: 1 });
 });
 
 const port = process.env.PORT || 5000
