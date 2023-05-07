@@ -50,7 +50,6 @@ app.get('/api/paiement-callback', async (req, res) => {
         const success = req.body.success;
         const failure = req.body.failure;
 
-        console.log(req.body)
         const api_secret = process.env.API_SECRET_KEY;
         const sandbox = process.env.ENV;
 
@@ -58,7 +57,7 @@ app.get('/api/paiement-callback', async (req, res) => {
         const enchere = await EnchereModel.findOne({ _id: order_id });
         const amount_gived = amount * 100;
         const our_authenticity = `${order_id};${amount_gived};XOF;${api_secret}`;
-        const our_authenticity_hash = SHA1(our_authenticity).toUpperCase();
+        const our_authenticity_hash = SHA1(our_authenticity)?.toUpperCase();
 
         if (our_authenticity_hash !== authenticity) {
             return res.status(400).json({
@@ -81,7 +80,7 @@ app.get('/api/paiement-callback', async (req, res) => {
             updateEnchere(order_id, 'echoué');
         }
 
-        res.status(200).send({ body: req.body });
+        res.status(200).send({ body: req.body, success });
     } catch (error) {
         res.status(500).send(error.message)
 
