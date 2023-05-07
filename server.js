@@ -54,18 +54,18 @@ app.get('/api/paiement-callback', async (req, res) => {
         const sandbox = process.env.ENV;
 
         // Vérification de l'authenticité
-        const enchere = await EnchereModel.findOne({ _id: order_id });
-        const amount_gived = amount * 100;
-        const our_authenticity = `${order_id};${amount_gived};XOF;${api_secret}`;
-        const our_authenticity_hash = SHA1(our_authenticity)?.toUpperCase();
+        // const enchere = await EnchereModel.findOne({ _id: order_id });
+        // const amount_gived = amount * 100;
+        // const our_authenticity = `${order_id};${amount_gived};XOF;${api_secret}`;
+        // const our_authenticity_hash = SHA1(our_authenticity)?.toUpperCase();
 
-        if (our_authenticity_hash !== authenticity) {
-            return res.status(400).json({
-                status: 0,
-                our_authenticity: our_authenticity_hash,
-                error: 'bad_authenticity',
-            });
-        }
+        // if (our_authenticity_hash !== authenticity) {
+        //     return res.status(400).json({
+        //         status: 0,
+        //         our_authenticity: our_authenticity_hash,
+        //         error: 'bad_authenticity',
+        //     });
+        // }
 
         // Vérification du statut
         if (success === '1') {
