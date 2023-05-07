@@ -42,7 +42,7 @@ app.use((err, req, res, next) => {
 })
 
 
-app.post('/api/paiement-callback', async (req, res) => {
+app.get('/api/paiement-callback', async (req, res) => {
     try {
         const order_id = req.body.order_id;
         const amount = req.body.amount;
@@ -50,7 +50,7 @@ app.post('/api/paiement-callback', async (req, res) => {
         const success = req.body.success;
         const failure = req.body.failure;
 
-
+        console.log(req.body)
         const api_secret = process.env.API_SECRET_KEY;
         const sandbox = process.env.ENV;
 
