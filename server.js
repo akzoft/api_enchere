@@ -42,16 +42,17 @@ app.use((err, req, res, next) => {
 })
 
 
-app.get('/api/paiement-callback', async (req, res) => {
+app.post('/api/callback', async (req, res) => {
     try {
-        const order_id = req.body.order_id;
-        const amount = req.body.amount;
-        const authenticity = req.body.authenticity;
-        const success = req.body.success;
-        const failure = req.body.failure;
 
-        const api_secret = process.env.API_SECRET_KEY;
-        const sandbox = process.env.ENV;
+        // const order_id = req.body.order_id;
+        // const amount = req.body.amount;
+        // const authenticity = req.body.authenticity;
+        // const success = req.body.success;
+        // const failure = req.body.failure;
+
+        // const api_secret = process.env.API_SECRET_KEY;
+        // const sandbox = process.env.ENV;
 
         // Vérification de l'authenticité
         // const enchere = await EnchereModel.findOne({ _id: order_id });
@@ -68,19 +69,19 @@ app.get('/api/paiement-callback', async (req, res) => {
         // }
 
         // Vérification du statut
-        if (success === '1') {
-            if (sandbox === '1') {
-                updateEnchere(order_id, 'payé');
-            } else {
-                updateEnchere(order_id, 'payé');
-            }
-        } else if (failure === '1') {
-            updateEnchere(order_id, 'echoué');
-        } else {
-            updateEnchere(order_id, 'echoué');
-        }
+        // if (success === '1') {
+        //     if (sandbox === '1') {
+        //         updateEnchere(order_id, 'payé');
+        //     } else {
+        //         updateEnchere(order_id, 'payé');
+        //     }
+        // } else if (failure === '1') {
+        //     updateEnchere(order_id, 'echoué');
+        // } else {
+        //     updateEnchere(order_id, 'echoué');
+        // }
 
-        res.status(200).send({ body: req.body, success });
+        res.status(200).send({ body: req.body, success: 1 });
     } catch (error) {
         res.status(500).send(error.message)
 
