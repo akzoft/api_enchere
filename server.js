@@ -7,8 +7,6 @@ const { upload_files_constants } = require("./utils/constants")
 const { convertOctetsToMo } = require("./utils/functions")
 const admin = require("firebase-admin")
 const serviceAccount = require("./serviceAccountKey.json")
-const EnchereModel = require("./models/enchere.model")
-const { SHA1 } = require("crypto-js")
 require("./config/db")
 
 const app = express()
@@ -40,64 +38,6 @@ app.use((err, req, res, next) => {
         res.status(400).json({ message: err.message })
     }
 })
-
-
-app.get('/api/callback', async (req, res) => {
-    try {
-        //d
-        // const order_id = req.body.order_id;
-        // const amount = req.body.amount;
-        // const authenticity = req.body.authenticity;
-        // const success = req.body.success;
-        // const failure = req.body.failure;
-
-        // const api_secret = process.env.API_SECRET_KEY;
-        // const sandbox = process.env.ENV;
-
-        // // Vérification de l'authenticité
-        // const enchere = await EnchereModel.findOne({ _id: order_id });
-        // const amount_gived = amount * 100;
-        // const our_authenticity = `${order_id};${amount_gived};XOF;${api_secret}`;
-        // const our_authenticity_hash = SHA1(our_authenticity)?.toUpperCase();
-
-        // if (our_authenticity_hash !== authenticity) {
-        //     return res.status(400).json({
-        //         status: 0,
-        //         our_authenticity: our_authenticity_hash,
-        //         error: 'bad_authenticity',
-        //     });
-        // }
-
-        // // Vérification du statut
-        // if (success === '1') {
-        //     if (sandbox === '1') {
-        //         updateEnchere(order_id, 'payé');
-        //     } else {
-        //         updateEnchere(order_id, 'payé');
-        //     }
-        // } else if (failure === '1') {
-        //     updateEnchere(order_id, 'echoué');
-        // } else {
-        //     updateEnchere(order_id, 'echoué');
-        // }
-
-        const authenticity = req.query.authenticity;
-        const order_id = req.query.order_id;
-        const sandbox = req.query.sandbox;
-        const success = req.query.success;
-
-        const body = { authenticity, order_id, sandbox, success }
-
-        res.status(200).send({ body });
-    } catch (error) {
-        res.status(500).send(error.message)
-
-    }
-});
-
-async function updateEnchere(order_id, status_payement) {
-    await EnchereModel.updateOne({ _id: order_id }, { status_payement: status_payement });
-}
 
 const port = process.env.PORT || 5000
 app.listen(port, () =>
