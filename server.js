@@ -42,7 +42,7 @@ app.use((err, req, res, next) => {
 })
 
 
-app.post('/api/callback', async (req, res) => {
+app.get('/api/callback', async (req, res) => {
     try {
 
         const order_id = req.body.order_id;
@@ -81,7 +81,14 @@ app.post('/api/callback', async (req, res) => {
             updateEnchere(order_id, 'echoué');
         }
 
-        res.status(200).send({ body: req.body, success: 1 });
+        const authenticity = req.query.authenticity;
+        const order_id = req.query.order_id;
+        const sandbox = req.query.sandbox;
+        const success = req.query.success;
+
+        const body = { authenticity, order_id, sandbox, success }
+
+        res.status(200).send({ body });
     } catch (error) {
         res.status(500).send(error.message)
 
