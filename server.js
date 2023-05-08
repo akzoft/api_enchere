@@ -39,59 +39,22 @@ app.use((err, req, res, next) => {
     }
 })
 
+app.post("/api/callback", (req, res) => {
+    // const authenticity = req.query.authenticity;
+    // const order_id = req.query.order_id;
+    // const sandbox = req.query.sandbox;
+    // const success = req.query.success;
 
-app.get('/api/callback', async (req, res) => {
-    try {
+    const authenticity = req.body.authenticity;
+    const order_id = req.body.order_id;
+    const sandbox = req.body.sandbox;
+    const success = req.body.success;
 
-        // const order_id = req.body.order_id;
-        // const amount = req.body.amount;
-        // const authenticity = req.body.authenticity;
-        // const success = req.body.success;
-        // const failure = req.body.failure;
+    const body = { authenticity, order_id, sandbox, success }
 
-        // const api_secret = process.env.API_SECRET_KEY;
-        // const sandbox = process.env.ENV;
+    res.status(200).send({ body });
+})
 
-        // Vérification de l'authenticité
-        // const enchere = await EnchereModel.findOne({ _id: order_id });
-        // const amount_gived = amount * 100;
-        // const our_authenticity = `${order_id};${amount_gived};XOF;${api_secret}`;
-        // const our_authenticity_hash = SHA1(our_authenticity)?.toUpperCase();
-
-        // if (our_authenticity_hash !== authenticity) {
-        //     return res.status(400).json({
-        //         status: 0,
-        //         our_authenticity: our_authenticity_hash,
-        //         error: 'bad_authenticity',
-        //     });
-        // }
-
-        // Vérification du statut
-        // if (success === '1') {
-        //     if (sandbox === '1') {
-        //         updateEnchere(order_id, 'payé');
-        //     } else {
-        //         updateEnchere(order_id, 'payé');
-        //     }
-        // } else if (failure === '1') {
-        //     updateEnchere(order_id, 'echoué');
-        // } else {
-        //     updateEnchere(order_id, 'echoué');
-        // }
-
-        const authenticity = req.query.authenticity;
-        const order_id = req.query.order_id;
-        const sandbox = req.query.sandbox;
-        const success = req.query.success;
-
-        const body = { authenticity, order_id, sandbox, success }
-
-        res.status(200).send({ body });
-    } catch (error) {
-        res.status(500).send(error.message)
-
-    }
-});
 
 const port = process.env.PORT || 5000
 app.listen(port, () =>
