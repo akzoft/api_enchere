@@ -18,7 +18,7 @@ admin.initializeApp({
 app.use("/api/public", express.static(path.join(__dirname, "public")))
 app.use(bodyParser.json())
 app.use(cors())
-
+app.use(bodyParser.urlencoded({ extended: true }))
 
 //use of routers here
 app.use("/api/user", require("./routes/user.route"))
