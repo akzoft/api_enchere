@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt')
 const { isValidObjectId } = require("mongoose")
 const { constants, regex } = require("../utils/constants")
 const { removePhoneIndicatif } = require("../utils/functions")
+const { send_notif_func } = require("./notification.controller")
 
 //----------- @return boolean depending on whether the user token is valid or not ------------------
 //check if got token is valid then send true else send false
@@ -48,7 +49,7 @@ exports.login = async (req, res) => {
     try {
         var { email, phone, dashboard } = req.body;
         if (email) email = req.body.email.toLowerCase().trim();
-        if (phone) phone = req.body.phone.trim();
+        if (phone) phone = removePhoneIndicatif(req.body.phone.trim());
 
         var user = null;
         if (email && email !== "" && (dashboard || dashboard !== "")) user = await UserModel.findOne({ email });
@@ -63,15 +64,26 @@ exports.login = async (req, res) => {
         const pass = await bcrypt.compare(req.body.password, user.password);
         if (!pass) throw `${msg} ou le mot de passe est incorrect.`;
 
+        if (dashboard && !user?.admin) throw `${msg} ou le mot de passe est incorrect.`;
+        if (user?.rejected) throw "Vous n'êtes plus autorisé a acceder a ce compte. Veuillez-nous contacter pour plus de renseignement."
+
+
         // Create token JWT who expired in 3hours
         const token = JsonWebToken.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "3h" })
 
         let { password, ...rest } = user._doc
 
+        let title = "Authentification";
+        let body = "Authentification reussie!"
+        let to = user?.notification_token
+        let data = { type: "success" }
+        await send_notif_func(title, body, to, data)
+
         // Retour de la réponse avec le token et l'employé connecté
         res.status(200).json({ token, response: rest, message: rest.license_status ? "Vous êtes connecté." : !rest.license_status && "Activer votre compte." })
 
     } catch (error) {
+        console.log(error)
         res.status(500).send({ message: error })
     }
 
@@ -81,33 +93,33 @@ exports.login = async (req, res) => {
 //----------- @return "logged user's data" ------------------
 //when user is logged we retrieve the licenseKey from his datas and compare it with his input licenseKey
 //if it matches, we update his license_status to true else we throw errors
-exports.licenseActivation = async (req, res) => {
-    try {
-        const { licenseKey, userID } = req.body
+// exports.licenseActivation = async (req, res) => {
+//     try {
+//         const { licenseKey, userID } = req.body
 
-        if (!isValidObjectId(userID)) throw "ID fourni est incorrect ou invalide."
-        if (!licenseKey || licenseKey === "") throw "Un code d'activation est requis."
+//         if (!isValidObjectId(userID)) throw "ID fourni est incorrect ou invalide."
+//         if (!licenseKey || licenseKey === "") throw "Un code d'activation est requis."
 
-        const user = await UserModel.findById(userID).select("-password")
-        if (isEmpty(user)) throw "Ce compte n'existe pas."
+//         const user = await UserModel.findById(userID).select("-password")
+//         if (isEmpty(user)) throw "Ce compte n'existe pas."
 
-        const isLicenseValid = licenseKey === user?.licenseKey ? true : false
-        if (!isLicenseValid) throw "Le code d'activation est incorrect."
+//         const isLicenseValid = licenseKey === user?.licenseKey ? true : false
+//         if (!isLicenseValid) throw "Le code d'activation est incorrect."
 
-        const updated = await UserModel.findByIdAndUpdate(userID, { $set: { license_status: true } }, { new: true }).select("-password")
-        if (isEmpty(updated)) throw "Echec d'activation de votre code."
-        res.status(200).json({ response: updated, message: "Compte activé." })
+//         const updated = await UserModel.findByIdAndUpdate(userID, { $set: { license_status: true } }, { new: true }).select("-password")
+//         if (isEmpty(updated)) throw "Echec d'activation de votre code."
+//         res.status(200).json({ response: updated, message: "Compte activé." })
 
-    } catch (error) {
-        console.log(error)
-        res.status(500).send({ message: error });
-    }
-}
+//     } catch (error) {
+//         console.log(error)
+//         res.status(500).send({ message: error });
+//     }
+// }
 
 
 exports.signup = async (req, res) => {
     try {
-        const { activation_code, code, password_confirm, facebook } = req.body
+        const { activation_code, code, password_confirm, facebook, dashboard } = req.body
 
         const phone = removePhoneIndicatif(req.body.phone)
 
@@ -118,8 +130,8 @@ exports.signup = async (req, res) => {
         if (phone && !regex.phone.test(phone)) throw " Format du numéro de telephone incorrect."
         if (isEmpty(req.body.password) || req.body.password === "") throw "Un mot de passe est requis."
         if (req.body.password.length < 6) throw "Mot de passe trop court. Min: 6 caractères"
-        if (req.body.password !== password_confirm) throw "Les mots de passe ne se correspondent pas."
-        if (activation_code !== code) throw "Code d'activation incorrect."
+        if (!dashboard) if (req.body.password !== password_confirm) throw "Les mots de passe ne se correspondent pas."
+        if (!dashboard) if (activation_code !== code) throw "Code d'activation incorrect."
 
         const salt = await bcrypt.genSalt(10)
         const hash = await bcrypt.hash(req.body.password, salt)
@@ -135,12 +147,29 @@ exports.signup = async (req, res) => {
         }
 
         if (!isEmpty(facebook) || facebook !== null) toStore.facebook = facebook
+        if (!isEmpty(req.body.notification_token) || req.body.notification_token !== "") toStore.notification_token = req.body.notification_token
+
+        if (dashboard && dashboard !== "") {
+            if (req.body.email) toStore.email = req.body.email?.toLowerCase()?.trim()
+            if (req.body.town) toStore.town = req.body.town?.trim()
+            if (req.body.vip) toStore.vip = req.body.vip
+            if (req.body.admin) toStore.admin = req.body.admin
+            if (req.body.image) toStore.image = req.body.image
+            if (req.body.name) toStore.name = req.body.name?.trim()
+        }
 
         const user = await toStore.save()
+
+        let title = "Creation de compte";
+        let body = "Votre compte à été crée avec succès."
+        let to = user?.notification_token
+
+        const notif = await send_notif_func(title, body, "", to, null)
+
         const token = JsonWebToken.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "3h" })
         let { password, ...rest } = user._doc
 
-        res.status(200).json({ token, response: rest, message: "Creation de compte reussie." })
+        res.status(200).json({ token, response: rest, notif, message: "Creation de compte reussie." })
     } catch (error) {
         console.log(error)
         res.status(500).send({ message: error });

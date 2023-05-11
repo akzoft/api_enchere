@@ -16,14 +16,16 @@ admin.initializeApp({
 })
 
 app.use("/api/public", express.static(path.join(__dirname, "public")))
+app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 app.use(cors())
-app.use(bodyParser.urlencoded({ extended: true }))
+
 
 //use of routers here
 app.use("/api/user", require("./routes/user.route"))
 app.use("/api/enchere", require("./routes/enchere.route"))
 app.use("/api/notification", require("./routes/notification.route"))
+app.use("/api/vitepay", require("./routes/vitepay.route"))
 
 //upload files error handler
 app.use((err, req, res, next) => {
@@ -38,23 +40,6 @@ app.use((err, req, res, next) => {
         res.status(400).json({ message: err.message })
     }
 })
-
-app.post("/api/callback", (req, res) => {
-    // const authenticity = req.query.authenticity;
-    // const order_id = req.query.order_id;
-    // const sandbox = req.query.sandbox;
-    // const success = req.query.success;
-
-    const authenticity = req.body.authenticity;
-    const order_id = req.body.order_id;
-    const sandbox = req.body.sandbox;
-    const success = req.body.success;
-
-    const body = { authenticity, order_id, sandbox, success }
-
-    res.status(200).send({ body });
-})
-
 
 const port = process.env.PORT || 5000
 app.listen(port, () =>
